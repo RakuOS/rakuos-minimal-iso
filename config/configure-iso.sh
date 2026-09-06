@@ -43,27 +43,6 @@ PY
 # Mask overlay services so they cannot be started or pulled in on the live ISO
 systemctl mask rakuos-overlay-sync.service rakuos-overlay-mount.service
 
-# Read packages into array and install
-mapfile -t PACKAGES < <(
-    grep -v '^\s*#' "/usr/share/rakuos/packages-live.list" \
-    | grep -v '^\s*$' \
-    | sed 's/\s*#.*//' \
-    | tr -s ' \t' '\n' \
-    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
-    | grep -v '^$'
-) || true
-
-rum install -y --refresh "${PACKAGES[@]}"
-
-# Reset RakuOS overlay state for live ISO
-echo "Resetting RakuOS overlay state for live ISO..."
-rm -rf /var/lib/rakuos
-mkdir -p /var/lib/rakuos
-if [[ -f /usr/share/rakuos/packages-live.list ]]; then
-    cp /usr/share/rakuos/packages-live.list /var/lib/rakuos/packages.list
-    sed -i -e '$a\' /var/lib/rakuos/packages.list
-fi
-
 echo "RakuOS release $VERSION_ID ($VERSION_CODENAME)" >/etc/system-release
 
 # Get shared artwork and system files from iso-base
