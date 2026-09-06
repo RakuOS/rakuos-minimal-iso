@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Build the RakuOS Kde ISO locally using the rakuos-forge binary.
+# Build the RakuOS Minimal ISO locally using the rakuos-forge binary.
 #
 # Usage: ./build-local.sh [branch_slug]
-#   branch_slug defaults to "latest" (i.e. quay.io/rakuos/rakuos-kde:latest)
+#   branch_slug defaults to "latest" (i.e. quay.io/rakuos/rakuos-minimal:latest)
 #
 # Requires `rakuos-forge` to be installed (dnf install rakuos-forge, after
 # adding https://repo.rakuos.org/rakuos.repo).
@@ -31,7 +31,7 @@ rm -f "${SELF_DIR}/output.iso"
 rm -rf "${SELF_DIR}/output"
 rm -rf "${SELF_DIR}/work"
 
-IMAGE_REPO="quay.io/rakuos/rakuos-kde"
+IMAGE_REPO="quay.io/rakuos/rakuos-minimal"
 BRANCH_SLUG="${1:-latest}"
 IMAGE_REF="${IMAGE_REPO}:${BRANCH_SLUG}"
 COMPRESSION="${COMPRESSION:-squashfs}"
@@ -40,9 +40,9 @@ PLATFORM="${PLATFORM:-amd64}"
 # Matches .gitlab-ci.yml's LATEST_ISO_NAME: no branch segment for the
 # default/"latest" branch, otherwise the branch slug is inserted.
 if [ "${BRANCH_SLUG}" = "latest" ]; then
-  ISO_NAME="rakuos-kde-latest-${PLATFORM}.iso"
+  ISO_NAME="rakuos-minimal-latest-${PLATFORM}.iso"
 else
-  ISO_NAME="rakuos-kde-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
+  ISO_NAME="rakuos-minimal-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
 fi
 
 export RAKUFORGE_BUILDER_DISTRO="${BUILDER_DISTRO:-fedora}"
@@ -50,7 +50,7 @@ export HOOK_post_rootfs="${SELF_DIR}/config/configure-iso.sh"
 export HOOK_pre_initramfs="${SELF_DIR}/config/pre_initramfs.sh"
 
 cd "${SELF_DIR}"
-rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}"
+rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys false --cli-installer true
 
 mkdir -p "${SELF_DIR}/output"
 mv "${SELF_DIR}/output.iso" "${SELF_DIR}/output/${ISO_NAME}"

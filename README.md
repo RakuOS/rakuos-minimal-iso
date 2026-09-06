@@ -1,8 +1,8 @@
-# RakuOS KDE ISO
+# RakuOS Minimal ISO
 
-This repository builds the KDE Plasma live ISO for RakuOS Linux.
+This repository builds the minimal live ISO for RakuOS Linux.
 
-It is the ISO-side companion to the `rakuos-kde` image repository and is built in GitLab using [RakuForge](https://gitlab.com/rakuos/iso/rakuos-forge), the RakuOS-maintained fork of uBlue's Titanoboa.
+It is the ISO-side companion to the `rakuos-minimal` image repository and is built in GitLab using [RakuForge](https://gitlab.com/rakuos/iso/rakuos-forge), the RakuOS-maintained fork of uBlue's Titanoboa.
 
 ## Purpose
 
@@ -10,15 +10,15 @@ This repo exists to keep ISO-specific logic separate from the desktop image repo
 
 It owns:
 
-- KDE ISO pipeline configuration
+- Minimal ISO pipeline configuration
 - live ISO customization hooks
 - post-rootfs and pre-initramfs scripts
 - edition-specific ISO naming and release behavior
 
 It does not own the desktop container image itself. That comes from:
 
-- `registry.gitlab.com/rakuos/images/rakuos-kde`
-- `registry.gitlab.com/rakuos/images/rakuos-kde/nvidia`
+- `registry.gitlab.com/rakuos/images/rakuos-minimal`
+- `registry.gitlab.com/rakuos/images/rakuos-minimal/nvidia`
 
 ## Branches
 
@@ -59,15 +59,20 @@ The pipeline clones and uses:
 
 RakuForge is used to assemble the live ISO from the corresponding RakuOS bootc image while carrying the RakuOS-specific CI behavior needed for GitLab.
 
+Unlike the desktop editions, this ISO has no desktop environment to autostart an
+installer session in. It boots straight to a TTY autologin running
+`rakuos-installer-cli`, RakuForge's `--cli-installer` mode, instead of the
+`livesys-scripts`-based graphical autostart the desktop editions use.
+
 Upstream credit:
 
 - https://github.com/ublue-os/titanoboa
 
 ## Repo Layout
 
-- [config/configure-iso.sh](/var/home/tohur/Documents/Projects/rakuos-kde-iso/config/configure-iso.sh)
-- [config/pre_initramfs.sh](/var/home/tohur/Documents/Projects/rakuos-kde-iso/config/pre_initramfs.sh)
-- [.gitlab-ci.yml](/var/home/tohur/Documents/Projects/rakuos-kde-iso/.gitlab-ci.yml)
+- [config/configure-iso.sh](config/configure-iso.sh)
+- [config/pre_initramfs.sh](config/pre_initramfs.sh)
+- [.gitlab-ci.yml](.gitlab-ci.yml)
 
 ## Local Notes
 

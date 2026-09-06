@@ -20,7 +20,7 @@ spec:
       default: "true"
 ---
 # ============================================================
-# RakuOS KDE ISO — GitLab CI/CD Pipeline
+# RakuOS Minimal ISO — GitLab CI/CD Pipeline
 # ============================================================
 
 workflow:
@@ -41,16 +41,16 @@ workflow:
     - when: never
 
 variables:
-  IMAGE_REPO: "quay.io/rakuos/rakuos-kde"
+  IMAGE_REPO: "quay.io/rakuos/rakuos-minimal"
   PLATFORM: "amd64"
   COMPRESSION: "squashfs"
   JOB_IMAGE: "quay.io/fedora/fedora:latest"
   BUILDER_DISTRO: "fedora"
   RAKUOS_SERVER_UPLOAD: "$[[ inputs.rakuos-server-upload ]]"
   SOURCEFORGE_UPLOAD: "$[[ inputs.sourceforge-upload ]]"
-  SOURCEFORGE_ARCHIVE_PATH: "${SOURCEFORGE_ARCHIVE_ROOT}/KDE"
+  SOURCEFORGE_ARCHIVE_PATH: "${SOURCEFORGE_ARCHIVE_ROOT}/MINIMAL"
   CDN77_UPLOAD: "$[[ inputs.cdn77-upload ]]"
-  CDN77_PATH: "kde"
+  CDN77_PATH: "minimal"
 
 stages:
   - build
@@ -126,14 +126,14 @@ build-iso-standard:
       export RAKUFORGE_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
-      rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}"
+      rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys false --cli-installer true
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
-        export NEW_ISO_NAME="rakuos-kde-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-kde-latest-${PLATFORM}.iso"
+        export NEW_ISO_NAME="rakuos-minimal-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-minimal-latest-${PLATFORM}.iso"
       else
-        export NEW_ISO_NAME="rakuos-kde-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-kde-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
+        export NEW_ISO_NAME="rakuos-minimal-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-minimal-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
       [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . || true; exit 1; }
@@ -214,7 +214,7 @@ build-iso-standard:
         fi
       fi
   artifacts:
-    name: "rakuos-kde-${CI_COMMIT_REF_SLUG}-standard-${CI_PIPELINE_ID}"
+    name: "rakuos-minimal-${CI_COMMIT_REF_SLUG}-standard-${CI_PIPELINE_ID}"
     paths:
       - output/*.sha256
     expire_in: 7 days
