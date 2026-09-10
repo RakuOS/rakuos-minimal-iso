@@ -2,6 +2,14 @@
 
 set -exo pipefail
 
+# NOTE: the minimal ISO's *live environment* is the RakuOS KDE image (see the
+# rakuos-forge invocation in .gitlab-ci.yml -- it is built from
+# quay.io/rakuos/rakuos-kde). The *installed* image is still rakuos-minimal
+# (passed as --container-image and baked into /usr/share/rakuos/image-store).
+# This script therefore configures a KDE live session (mirroring
+# rakuos-kde-iso/config/configure-iso.sh) and additionally installs the
+# text-mode installer for the "Text-Mode Installer" GRUB entry.
+
 source /etc/os-release
 
 # sudo requires drop-in files to be owned by root and not be writable by others
@@ -17,10 +25,11 @@ chmod 0440 /etc/sudoers.d/secure-path
 # Remove all versionlocks to avoid dependency issues
 rum -qy versionlock clear
 
-# Install RakuOS installer (text-mode CLI frontend + common backend).
-# rakuos-forge's --cli-installer flag configures tty1 to autologin and
-# launch rakuos-installer-cli directly -- there's no desktop environment
-# on this image for a GUI frontend to run under.
+# Install RakuOS installer (Qt frontend for the KDE live session + common
+# backend) and the text-mode CLI frontend (for the "Text-Mode Installer" GRUB
+# entry, which boots this same media to multi-user.target -- see
+# rakuos-forge's --cli-installer).
+rum install -qy rakuos-installer-qt
 rum install -qy rakuos-installer-cli
 
 # Allow the RakuOS installer's local `oci:` re-export of this image to pass
@@ -43,15 +52,77 @@ PY
 # Mask overlay services so they cannot be started or pulled in on the live ISO
 systemctl mask rakuos-overlay-sync.service rakuos-overlay-mount.service
 
+# Read packages into array and install
+mapfile -t PACKAGES < <(
+    grep -v '^\s*#' "/usr/share/rakuos/packages-live.list" \
+    | grep -v '^\s*$' \
+    | sed 's/\s*#.*//' \
+    | tr -s ' \t' '\n' \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+    | grep -v '^$'
+) || true
+
+rum install -y --refresh "${PACKAGES[@]}"
+
+# Reset RakuOS overlay state for live ISO
+echo "Resetting RakuOS overlay state for live ISO..."
+rm -rf /var/lib/rakuos
+mkdir -p /var/lib/rakuos
+if [[ -f /usr/share/rakuos/packages-live.list ]]; then
+    cp /usr/share/rakuos/packages-live.list /var/lib/rakuos/packages.list
+    sed -i -e '$a\' /var/lib/rakuos/packages.list
+fi
+
+# Variables
+imageref="$(podman images --format '{{ index .Names 0 }}\n' 'rakuos*' | head -1)"
+imageref="${imageref##*://}"
+imageref="${imageref%%:*}"
+imagetag="$(podman images --format '{{ .Tag }}\n' "$imageref" | head -1)"
+
 echo "RakuOS release $VERSION_ID ($VERSION_CODENAME)" >/etc/system-release
 
 # Get shared artwork and system files from iso-base
 git clone --depth 1 --quiet https://gitlab.com/rakuos/iso/iso-base.git /root/packages
+
+### Desktop-environment specific tweaks ###
+
+# Use GSK_RENDERER=gl for NVIDIA — workaround for GTK apps not opening
+if [[ $imageref == *-nvidia* ]]; then
+    mkdir -p /etc/environment.d /etc/skel/.config/environment.d
+    echo "GSK_RENDERER=gl" >>/etc/environment.d/99-nvidia-fix.conf
+    echo "GSK_RENDERER=gl" >>/etc/skel/.config/environment.d/99-nvidia-fix.conf
+fi
+
+# Re-enable nouveau for the live session on NVIDIA images
+if [[ $imageref == *-nvidia* ]]; then
+    for pkg in nvidia-gpu-firmware mesa-vulkan-drivers; do
+        rum -yq reinstall --allowerasing $pkg ||
+            rum -yq install --allowerasing $pkg
+    done
+    # Ensure nouveau vulkan ICDs exist
+    (
+        shopt -u nullglob
+        ls /usr/share/vulkan/icd.d/nouveau_icd.*.json >/dev/null
+    ) || {
+        echo >&2 "::error::No nouveau vulkan ICDs found at /usr/share/vulkan/icd.d/nouveau_icd.*.json"
+        exit 1
+    }
+fi
 
 # Don't show the motd verification notice
 rm -vf /etc/profile.d/verify_motd.sh
 
 echo "Copying shared system files..."
 cp -af /root/packages/installer/system_files/shared/. /
+
+echo "Copying KDE-specific system files..."
+cp -a /root/packages/installer/system_files/kde/. /
+
+# Change default pins for KDE
+sed -i '/const allPanels/,$d' /usr/share/plasma/layout-templates/org.rakuos.plasma.desktop.defaultPanel/contents/layout.js
+sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/rakuos-pins.js' /usr/share/plasma/layout-templates/org.rakuos.plasma.desktop.defaultPanel/contents/layout.js
+
+# Remove rakuos-welcome autostart for the live environment
+rm -f /etc/xdg/autostart/rakuos-welcome.desktop
 
 rm -rf /root/packages
