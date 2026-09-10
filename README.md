@@ -59,10 +59,17 @@ The pipeline clones and uses:
 
 RakuForge is used to assemble the live ISO from the corresponding RakuOS bootc image while carrying the RakuOS-specific CI behavior needed for GitLab.
 
-Unlike the desktop editions, this ISO has no desktop environment to autostart an
-installer session in. It boots straight to a TTY autologin running
-`rakuos-installer-cli`, RakuForge's `--cli-installer` mode, instead of the
-`livesys-scripts`-based graphical autostart the desktop editions use.
+The *installed* image is `rakuos-minimal` (no desktop environment), but the
+*live environment* on this ISO is the RakuOS **KDE** image, so users get a full
+Plasma session and the Qt installer. RakuForge is invoked with the KDE image as
+its positional `image` argument and `--container-image quay.io/rakuos/rakuos-minimal:<tag>`,
+which is what gets baked into `/usr/share/rakuos/image-store` and installed to
+disk.
+
+`--cli-installer true` is also passed: it adds a **"Text-Mode Installer"** GRUB
+entry that boots this same live media to `multi-user.target`, where a TTY
+autologin launches `rakuos-installer-cli`. The graphical Plasma session remains
+the default boot entry.
 
 Upstream credit:
 

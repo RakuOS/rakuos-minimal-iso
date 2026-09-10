@@ -32,8 +32,12 @@ rm -rf "${SELF_DIR}/output"
 rm -rf "${SELF_DIR}/work"
 
 IMAGE_REPO="quay.io/rakuos/rakuos-minimal"
+# The minimal ISO installs the minimal image but boots a full KDE live session
+# as its environment (Qt installer); see the rakuos-forge invocation below.
+LIVE_IMAGE_REPO="quay.io/rakuos/rakuos-kde"
 BRANCH_SLUG="${1:-latest}"
 IMAGE_REF="${IMAGE_REPO}:${BRANCH_SLUG}"
+LIVE_IMAGE_REF="${LIVE_IMAGE_REPO}:${BRANCH_SLUG}"
 COMPRESSION="${COMPRESSION:-squashfs}"
 PLATFORM="${PLATFORM:-amd64}"
 
@@ -50,7 +54,11 @@ export HOOK_post_rootfs="${SELF_DIR}/config/configure-iso.sh"
 export HOOK_pre_initramfs="${SELF_DIR}/config/pre_initramfs.sh"
 
 cd "${SELF_DIR}"
-rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys false --cli-installer true
+# Live environment: KDE image (graphical session + Qt installer).
+# Stored/installed image: the minimal image (--container-image).
+# --cli-installer adds a "Text-Mode Installer" GRUB entry that boots the same
+# live media straight to rakuos-installer-cli.
+rakuos-forge build "${LIVE_IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys true --cli-installer true
 
 mkdir -p "${SELF_DIR}/output"
 mv "${SELF_DIR}/output.iso" "${SELF_DIR}/output/${ISO_NAME}"
