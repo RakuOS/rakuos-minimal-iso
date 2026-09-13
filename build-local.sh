@@ -58,7 +58,12 @@ cd "${SELF_DIR}"
 # Stored/installed image: the minimal image (--container-image).
 # --cli-installer adds a "Text-Mode Installer" GRUB entry that boots the same
 # live media straight to rakuos-installer-cli.
-rakuos-forge build "${LIVE_IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys true --cli-installer true
+if [ "${BRANCH_SLUG}" = "latest" ]; then
+  PRETTY_NAME="RakuOS Minimal (Graphical Installer)"
+else
+  PRETTY_NAME="RakuOS ${BRANCH_SLUG} Minimal (Graphical Installer)"
+fi
+rakuos-forge build "${LIVE_IMAGE_REF}" --compression "${COMPRESSION}" --container-image "${IMAGE_REF}" --livesys true --cli-installer true --pretty-name "${PRETTY_NAME}"
 
 mkdir -p "${SELF_DIR}/output"
 mv "${SELF_DIR}/output.iso" "${SELF_DIR}/output/${ISO_NAME}"
