@@ -48,7 +48,7 @@ variables:
   # provided via --cli-installer.
   LIVE_IMAGE_REPO: "quay.io/rakuos/rakuos-kde"
   PLATFORM: "amd64"
-  COMPRESSION: "squashfs"
+  COMPRESSION: "erofs"
   JOB_IMAGE: "quay.io/fedora/fedora:latest"
   BUILDER_DISTRO: "fedora"
   RAKUOS_SERVER_UPLOAD: "$[[ inputs.rakuos-server-upload ]]"

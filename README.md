@@ -63,7 +63,7 @@ The *installed* image is `rakuos-minimal` (no desktop environment), but the
 *live environment* on this ISO is the RakuOS **KDE** image, so users get a full
 Plasma session and the Qt installer. RakuForge is invoked with the KDE image as
 its positional `image` argument and `--container-image quay.io/rakuos/rakuos-minimal:<tag>`,
-which is what gets baked into `/usr/share/rakuos/image-store` and installed to
+which RakuForge copies into the ISO's bootc image store and the installer installs to
 disk.
 
 `--cli-installer true` is also passed: it adds a **"Text-Mode Installer"** GRUB
