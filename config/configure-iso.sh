@@ -2,14 +2,15 @@
 
 set -exo pipefail
 
-# NOTE: the minimal ISO's *live environment* is the RakuOS KDE image (see the
-# rakuos-forge invocation in .gitlab-ci.yml -- it is built from
-# quay.io/rakuos/rakuos-kde). The *installed* image is still rakuos-minimal
-# (passed as --container-image; rakuos-forge puts it into the ISO's bootc
-# image store, which the installer installs from).
-# This script therefore configures a KDE live session (mirroring
-# rakuos-kde-iso/config/configure-iso.sh) and additionally installs the
-# text-mode installer for the "Text-Mode Installer" GRUB entry.
+# The minimal ISO's live system is built from the minimal image itself (the
+# image the ISO installs), with the KDE image's package set and system files
+# layered on top for a graphical live session and the Qt installer. The live
+# image and the installed image then share every layer but the live one, so
+# the ISO's bootc store holds one image, not a full KDE image next to the
+# minimal one. The KDE layer comes from the rakuos-kde repo's own build
+# scripts at the branch matching the image tag, so it stays in step with the
+# KDE image. The rest mirrors rakuos-kde-iso/config/configure-iso.sh, plus
+# the text-mode installer for the "Text-Mode Installer" GRUB entry.
 
 source /etc/os-release
 
@@ -25,6 +26,42 @@ chmod 0440 /etc/sudoers.d/secure-path
 
 # Remove all versionlocks to avoid dependency issues
 rum -qy versionlock clear
+
+# Variables
+# rakuos-forge passes the image this live system is built from (there is
+# no container store to ask inside the live image build).
+imageref="${RAKUOS_IMAGE_REF:?rakuos-forge sets RAKUOS_IMAGE_REF}"
+imageref="${imageref##*://}"
+imagetag="${imageref##*:}"
+imageref="${imageref%:*}"
+
+### KDE live session layer ###
+# The rakuos-kde branch that builds the KDE image for this tag. Staging
+# images install the -staging RakuOS packages (RAKUOS_STAGING=1), as the
+# KDE image's CI does on its staging branch.
+case "$imagetag" in
+    staging) KDE_BRANCH=staging KDE_STAGING=1 ;;
+    rakuosel) KDE_BRANCH=rakuosel KDE_STAGING=0 ;;
+    latest) KDE_BRANCH=main KDE_STAGING=0 ;;
+    *)
+        echo "No rakuos-kde branch for image tag '$imagetag'; using main" >&2
+        KDE_BRANCH=main KDE_STAGING=0
+        ;;
+esac
+KDE_SRC=/root/rakuos-kde
+rm -rf "$KDE_SRC"
+git clone --depth 1 --quiet --branch "$KDE_BRANCH" https://gitlab.com/rakuos/images/rakuos-kde.git "$KDE_SRC"
+# Same order as the KDE image's Containerfile: system files, the build
+# scripts, system files again. Its overlay prebake (post-build-overlay.sh)
+# and chunking (assign-components.sh) only matter for a shipped image.
+cp -a "$KDE_SRC/system_files/." /
+RAKUOS_STAGING="$KDE_STAGING" bash "$KDE_SRC/build_files/build.sh"
+if [[ $imageref == *-nvidia* ]]; then
+    bash "$KDE_SRC/build_files/nvidia.sh"
+fi
+bash "$KDE_SRC/build_files/post-build.sh"
+cp -a "$KDE_SRC/system_files/." /
+rm -rf "$KDE_SRC"
 
 # Install RakuOS installer (Qt frontend for the KDE live session + common
 # backend) and the text-mode CLI frontend (for the "Text-Mode Installer" GRUB
@@ -56,14 +93,6 @@ if [[ -f /usr/share/rakuos/packages-live.list ]]; then
     cp /usr/share/rakuos/packages-live.list /var/lib/rakuos/packages.list
     sed -i -e '$a\' /var/lib/rakuos/packages.list
 fi
-
-# Variables
-# rakuos-forge passes the image this live system is built from (there is
-# no container store to ask inside the live image build).
-imageref="${RAKUOS_IMAGE_REF:?rakuos-forge sets RAKUOS_IMAGE_REF}"
-imageref="${imageref##*://}"
-imagetag="${imageref##*:}"
-imageref="${imageref%:*}"
 
 echo "RakuOS release $VERSION_ID ($VERSION_CODENAME)" >/etc/system-release
 
