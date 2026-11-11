@@ -50,6 +50,13 @@ case "$imagetag" in
 esac
 KDE_SRC=/root/rakuos-kde
 rm -rf "$KDE_SRC"
+# The minimal image only brands the boot (logos, Plymouth, GRUB theme,
+# fastfetch). The KDE image gets the rest from rakuos-base: the
+# rakuos-branding meta package (GTK and icon themes, fonts config) and
+# rakuos-wallpapers. Add them here, before the KDE scripts, so the live
+# Plasma session looks like the KDE edition. Live only: the installer
+# installs the minimal image as it is.
+rum install -qy rakuos-branding rakuos-wallpapers
 git clone --depth 1 --quiet --branch "$KDE_BRANCH" https://gitlab.com/rakuos/images/rakuos-kde.git "$KDE_SRC"
 # Same order as the KDE image's Containerfile: system files, the build
 # scripts, system files again. Its overlay prebake (post-build-overlay.sh)
