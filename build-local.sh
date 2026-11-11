@@ -55,9 +55,9 @@ cd "${SELF_DIR}"
 # installs the minimal image itself. --cli-installer adds a "Text-Mode Installer" GRUB entry that boots the same
 # live media straight to rakuos-installer-cli.
 if [ "${BRANCH_SLUG}" = "latest" ]; then
-  PRETTY_NAME="RakuOS Minimal (Graphical Installer)"
+  PRETTY_NAME="RakuOS Minimal"
 else
-  PRETTY_NAME="RakuOS ${BRANCH_SLUG} Minimal (Graphical Installer)"
+  PRETTY_NAME="RakuOS ${BRANCH_SLUG} Minimal"
 fi
 rakuos-forge build "${IMAGE_REF}" --compression "${COMPRESSION}" --livesys true --cli-installer true --pretty-name "${PRETTY_NAME}"
 
