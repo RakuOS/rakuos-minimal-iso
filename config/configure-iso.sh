@@ -74,7 +74,7 @@ rm -rf "$KDE_SRC"
 # backend) and the text-mode CLI frontend (for the "Text-Mode Installer" GRUB
 # entry, which boots this same media to multi-user.target -- see
 # rakuos-forge's --cli-installer).
-rum install -qy rakuos-installer-qt
+rum install -qy rakuos-installer-kirigami
 rum install -qy rakuos-installer-cli
 
 # Mask overlay services so they cannot be started or pulled in on the live ISO
